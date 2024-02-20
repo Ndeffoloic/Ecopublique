@@ -1,5 +1,6 @@
 import random
 import tkinter as tk
+import tkinter.messagebox as msg
 
 import numpy as np
 
@@ -62,28 +63,75 @@ class Grille:
 
     def grille_est_stable(self):
         return self.equilibre
+    def calculer_taux_segregation(self):
+        nb_points_bleus = sum(1 for point in self.points if point.type.startswith('B'))
+        nb_points_rouges = len(self.points) - nb_points_bleus
+        taux_segregation = abs(nb_points_bleus - nb_points_rouges) / len(self.points) * 100
+        return taux_segregation
+
+    def calculer_taux_satisfaction(self):
+        taux_satisfaction_total = 0
+        for point in self.points:
+            voisins = self.calculer_voisins(point.x, point.y)
+            nb_voisins_meme_type = sum(1 for nx, ny in voisins if self.grille[nx][ny] == point.type)
+            nb_voisins_vide = sum(1 for nx, ny in voisins if self.grille[nx][ny] is None)
+            taux_satisfaction_total += (nb_voisins_meme_type + nb_voisins_vide) / len(voisins)
+        taux_satisfaction_moyen = taux_satisfaction_total / len(self.points) * 100
+        return taux_satisfaction_moyen
+
+class Application(tk.Tk):
+    def __init__(self, taille, nb_points_bleus, nb_points_rouges):
+        super().__init__()
+        self.title("Schelling's Segregation Model")
+        self.canvas = tk.Canvas(self, width=40*taille, height=40*taille, bg="white")
+        self.canvas.pack()
+
+        indices = list(range(taille * taille))
+        random.shuffle(indices)
+
+        points = []
+        for i in range(nb_points_bleus):
+            x, y = divmod(indices[i], taille)
+            points.append(Point(x, y, f"B{i + 1}"))
+
+        for i in range(nb_points_rouges):
+            x, y = divmod(indices[nb_points_bleus + i], taille)
+            points.append(Point(x, y, f"R{i + 1}"))
+
+        self.grille = Grille(taille, points)
+        self.grille.initialiser_grille()
+
+        self.label = tk.Label(self, text="")
+        self.label.pack()
+
+        self.mise_a_jour_grille()
 
 
-def afficher_grille_tkinter(grille):
-    fenetre = tk.Tk()
-    fenetre.title("Grille de points")
-    
-    canvas = tk.Canvas(fenetre, width=400, height=400)
-    canvas.pack()
-    
-    for i in range(grille.taille):
-        for j in range(grille.taille):
-            if grille.grille[i][j] is None:
-                couleur = "white"
-            else:
-                if grille.grille[i][j].startswith('B'):
-                    couleur = "blue"
+    def mise_a_jour_grille(self):
+        self.grille.deplacer_points()
+        self.canvas.delete("all")  # Efface tous les éléments du canvas
+
+        for i in range(self.grille.taille):
+            for j in range(self.grille.taille):
+                if self.grille.grille[i][j] is None:
+                    couleur = "white"
                 else:
-                    couleur = "red"
-            
-            canvas.create_rectangle(j * 40, i * 40, (j + 1) * 40, (i + 1) * 40, fill=couleur)
-    
-    fenetre.mainloop()
+                    if self.grille.grille[i][j].startswith('B'):
+                        couleur = "blue"
+                    else:
+                        couleur = "red"
+
+                self.canvas.create_rectangle(j * 40, i * 40, (j + 1) * 40, (i + 1) * 40, fill=couleur)
+
+        taux_segregation = self.grille.calculer_taux_segregation()
+        taux_satisfaction = self.grille.calculer_taux_satisfaction()
+        info_text = f"Taux de Ségrégation: {taux_segregation}%\nTaux de Satisfaction: {taux_satisfaction}%"
+        self.label.config(text=info_text)
+
+        if self.grille.grille_est_stable():
+            msg.showinfo("Résultat", "Équilibre ségrégationniste atteint.")
+        else:
+            self.after(1000, self.mise_a_jour_grille)  # Planifie la prochaine mise à jour après 30 ms
 
 
 def main():
@@ -91,31 +139,8 @@ def main():
     nb_points_bleus = int(input("Entrez le nombre de points bleus : "))
     nb_points_rouges = int(input("Entrez le nombre de points rouges : "))
 
-    indices = list(range(taille * taille))
-    random.shuffle(indices)
-
-    points = []
-    for i in range(nb_points_bleus):
-        x, y = divmod(indices[i], taille)
-        points.append(Point(x, y, f"B{i + 1}"))
-
-    for i in range(nb_points_rouges):
-        x, y = divmod(indices[nb_points_bleus + i], taille)
-        points.append(Point(x, y, f"R{i + 1}"))
-
-    grille = Grille(taille, points)
-    grille.initialiser_grille()
-    afficher_grille_tkinter(grille)
-
-    while grille.equilibre is False:
-        action = input("Appuyez sur Enter pour continuer ou 'esc' pour sortir : ")
-        if action.lower() == 'esc':
-            return
-        grille.deplacer_points()
-        afficher_grille_tkinter(grille)
-
-    if grille.grille_est_stable():
-        print("Équilibre ségrégationniste atteint.")
+    app = Application(taille, nb_points_bleus, nb_points_rouges)
+    app.mainloop()
 
 
 if __name__ == "__main__":
