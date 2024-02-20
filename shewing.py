@@ -1,4 +1,5 @@
 import random
+import tkinter as tk
 
 import numpy as np
 
@@ -20,15 +21,6 @@ class Grille:
     def initialiser_grille(self):
         for point in self.points:
             self.grille[point.x][point.y] = point.type
-
-    def afficher_grille(self):
-        for ligne in self.grille:
-            for cellule in ligne:
-                if cellule is None:
-                    print("^.", end=" ")
-                else:
-                    print(cellule, end=" ")
-            print()
 
     def calculer_voisins(self, x, y):
         voisins = [(nx, ny) for nx in range(max(0, x - 1), min(x + 2, self.taille))
@@ -72,6 +64,28 @@ class Grille:
         return self.equilibre
 
 
+def afficher_grille_tkinter(grille):
+    fenetre = tk.Tk()
+    fenetre.title("Grille de points")
+    
+    canvas = tk.Canvas(fenetre, width=400, height=400)
+    canvas.pack()
+    
+    for i in range(grille.taille):
+        for j in range(grille.taille):
+            if grille.grille[i][j] is None:
+                couleur = "white"
+            else:
+                if grille.grille[i][j].startswith('B'):
+                    couleur = "blue"
+                else:
+                    couleur = "red"
+            
+            canvas.create_rectangle(j * 40, i * 40, (j + 1) * 40, (i + 1) * 40, fill=couleur)
+    
+    fenetre.mainloop()
+
+
 def main():
     taille = int(input("Entrez la taille de la grille : "))
     nb_points_bleus = int(input("Entrez le nombre de points bleus : "))
@@ -91,18 +105,17 @@ def main():
 
     grille = Grille(taille, points)
     grille.initialiser_grille()
-    grille.afficher_grille()
+    afficher_grille_tkinter(grille)
 
     while grille.equilibre is False:
         action = input("Appuyez sur Enter pour continuer ou 'esc' pour sortir : ")
         if action.lower() == 'esc':
             return
         grille.deplacer_points()
-        grille.afficher_grille()
+        afficher_grille_tkinter(grille)
 
     if grille.grille_est_stable():
         print("Équilibre ségrégationniste atteint.")
-        
 
 
 if __name__ == "__main__":
