@@ -28,7 +28,6 @@ class Grille:
                    for ny in range(max(0, y - 1), min(y + 2, self.taille))
                    if not (nx == x and ny == y)]
         return voisins
-
     def deplacer_points(self):
         deplacement_effectue = False
         for point in self.points:
@@ -39,15 +38,21 @@ class Grille:
             if nb_voisins_meme_type >= nb_voisins_autre_type:
                 continue  # Reste à sa position
 
-            if point.type.startswith('B') and point.x > 0 and point.y < self.taille - 1 and self.grille[point.x - 1][
-                point.y + 1] is None:
+            if point.type.startswith('B') and point.x > 0 and point.y < self.taille - 1 and self.grille[point.x - 1][point.y + 1] is None:
                 self.grille[point.x - 1][point.y + 1], self.grille[point.x][point.y] = point.type, None
                 point.x, point.y = point.x - 1, point.y + 1
                 deplacement_effectue = True
-            elif point.type.startswith('R') and point.x < self.taille - 1 and point.y > 0 and self.grille[point.x + 1][
-                point.y - 1] is None:
+            elif point.type.startswith('B') and point.x > 0 and point.y < self.taille - 1 and self.grille[point.x - 1][point.y - 1] is None:
+                self.grille[point.x - 1][point.y - 1], self.grille[point.x][point.y] = point.type, None
+                point.x, point.y = point.x - 1, point.y - 1
+                deplacement_effectue = True
+            elif point.type.startswith('R') and point.x < self.taille - 1 and point.y > 0 and self.grille[point.x + 1][point.y - 1] is None:
                 self.grille[point.x + 1][point.y - 1], self.grille[point.x][point.y] = point.type, None
                 point.x, point.y = point.x + 1, point.y - 1
+                deplacement_effectue = True
+            elif point.type.startswith('R') and point.x < self.taille - 1 and point.y < self.taille - 1 and self.grille[point.x + 1][point.y + 1] is None:
+                self.grille[point.x + 1][point.y + 1], self.grille[point.x][point.y] = point.type, None
+                point.x, point.y = point.x + 1, point.y + 1
                 deplacement_effectue = True
             else:  # Si le point ne peut pas se déplacer vers le coin cible, il se déplace aléatoirement vers une position libre
                 positions_libres = [(nx, ny) for nx in range(self.taille) for ny in range(self.taille) if
@@ -63,11 +68,12 @@ class Grille:
 
     def grille_est_stable(self):
         return self.equilibre
+    
     def calculer_taux_segregation(self):
         nb_points_bleus = sum(1 for point in self.points if point.type.startswith('B'))
         nb_points_rouges = len(self.points) - nb_points_bleus
         taux_segregation = abs(nb_points_bleus - nb_points_rouges) / len(self.points) * 100
-        return taux_segregation
+        return round(taux_segregation, 2)
 
     def calculer_taux_satisfaction(self):
         taux_satisfaction_total = 0
@@ -75,9 +81,11 @@ class Grille:
             voisins = self.calculer_voisins(point.x, point.y)
             nb_voisins_meme_type = sum(1 for nx, ny in voisins if self.grille[nx][ny] == point.type)
             nb_voisins_vide = sum(1 for nx, ny in voisins if self.grille[nx][ny] is None)
-            taux_satisfaction_total += (nb_voisins_meme_type + nb_voisins_vide) / len(voisins)
-        taux_satisfaction_moyen = taux_satisfaction_total / len(self.points) * 100
-        return taux_satisfaction_moyen
+            if len(voisins) > 0:  # pour vérifier que len(voisins) n'est pas zéro
+                taux_satisfaction_total += (nb_voisins_meme_type + nb_voisins_vide) / len(voisins)
+        taux_satisfaction_moyen = taux_satisfaction_total / len(self.points) * 100 if len(self.points) > 0 else 0
+        return round(taux_satisfaction_moyen, 2)
+
 
 class Application(tk.Tk):
     def __init__(self, taille, nb_points_bleus, nb_points_rouges):
