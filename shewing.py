@@ -30,38 +30,29 @@ class Grille:
         return voisins
     def deplacer_points(self):
         deplacement_effectue = False
+        tolerance = 0.3  # Par exemple, chaque point tolère jusqu'à 30% de voisins d'une autre couleur
+        iteration = 0
         for point in self.points:
             voisins = self.calculer_voisins(point.x, point.y)
             nb_voisins_meme_type = sum(1 for nx, ny in voisins if self.grille[nx][ny] == point.type)
             nb_voisins_autre_type = sum(1 for nx, ny in voisins if self.grille[nx][ny] != point.type and self.grille[nx][ny] is not None)
-
-            if nb_voisins_meme_type >= nb_voisins_autre_type:
+            #nb_espaces_vides = sum(1 for nx, ny in voisins if self.grille[nx][ny] is None)
+            
+            if nb_voisins_meme_type > nb_voisins_autre_type:
                 continue  # Reste à sa position
 
-            if point.type.startswith('B') and point.x > 0 and point.y < self.taille - 1 and self.grille[point.x - 1][point.y + 1] is None:
-                self.grille[point.x - 1][point.y + 1], self.grille[point.x][point.y] = point.type, None
-                point.x, point.y = point.x - 1, point.y + 1
-                deplacement_effectue = True
-            elif point.type.startswith('B') and point.x > 0 and point.y < self.taille - 1 and self.grille[point.x - 1][point.y - 1] is None:
-                self.grille[point.x - 1][point.y - 1], self.grille[point.x][point.y] = point.type, None
-                point.x, point.y = point.x - 1, point.y - 1
-                deplacement_effectue = True
-            elif point.type.startswith('R') and point.x < self.taille - 1 and point.y > 0 and self.grille[point.x + 1][point.y - 1] is None:
-                self.grille[point.x + 1][point.y - 1], self.grille[point.x][point.y] = point.type, None
-                point.x, point.y = point.x + 1, point.y - 1
-                deplacement_effectue = True
-            elif point.type.startswith('R') and point.x < self.taille - 1 and point.y < self.taille - 1 and self.grille[point.x + 1][point.y + 1] is None:
-                self.grille[point.x + 1][point.y + 1], self.grille[point.x][point.y] = point.type, None
-                point.x, point.y = point.x + 1, point.y + 1
-                deplacement_effectue = True
-            else:  # Si le point ne peut pas se déplacer vers le coin cible, il se déplace aléatoirement vers une position libre
-                positions_libres = [(nx, ny) for nx in range(self.taille) for ny in range(self.taille) if
-                                    self.grille[nx][ny] is None]
-                if positions_libres:
-                    nx, ny = random.choice(positions_libres)
+            # Définir les directions possibles de déplacement
+            directionsR = [(0, 1), (1, 0)] #(0, -1), (-1, 0)
+            directionsB = [(1, -1), (-1, 1)] #(1, 1), (-1, -1) 
+            directions = directionsB if point.type.startswith('B') else directionsR
+            for dx, dy in directions:
+                nx, ny = point.x + dx, point.y + dy
+                # Vérifier si la nouvelle position est dans la grille et est vide
+                if 0 <= nx < self.taille and 0 <= ny < self.taille and self.grille[nx][ny] is None:
                     self.grille[nx][ny], self.grille[point.x][point.y] = point.type, None
                     point.x, point.y = nx, ny
                     deplacement_effectue = True
+                    break  # Arrêter de chercher une fois qu'un espace libre est trouvé
 
         if not deplacement_effectue:
             self.equilibre = True
@@ -71,26 +62,37 @@ class Grille:
     
     def calculer_taux_segregation(self):
         nb_points_bleus = sum(1 for point in self.points if point.type.startswith('B'))
-        nb_points_rouges = len(self.points) - nb_points_bleus
-        taux_segregation = abs(nb_points_bleus - nb_points_rouges) / len(self.points) * 100
+        nb_points_rouges = sum(1 for point in self.points if point.type.startswith('R'))
+        taux_segregation = abs(nb_points_bleus - nb_points_rouges) / abs(nb_points_bleus + nb_points_rouges) * 100
         return round(taux_segregation, 2)
 
     def calculer_taux_satisfaction(self):
-        taux_satisfaction_total = 0
+        tolerance = 0.3  # Par exemple, chaque point tolère jusqu'à 30% de voisins d'une autre couleur
+        nb_points_satisfaits = 0
         for point in self.points:
             voisins = self.calculer_voisins(point.x, point.y)
             nb_voisins_meme_type = sum(1 for nx, ny in voisins if self.grille[nx][ny] == point.type)
-            nb_voisins_vide = sum(1 for nx, ny in voisins if self.grille[nx][ny] is None)
-            if len(voisins) > 0:  # pour vérifier que len(voisins) n'est pas zéro
-                taux_satisfaction_total += (nb_voisins_meme_type + nb_voisins_vide) / len(voisins)
-        taux_satisfaction_moyen = taux_satisfaction_total / len(self.points) * 100 if len(self.points) > 0 else 0
+            nb_voisins_autre_type = sum(1 for nx, ny in voisins if self.grille[nx][ny] != point.type and self.grille[nx][ny] is not None)
+            total_voisins = nb_voisins_meme_type + nb_voisins_autre_type
+            taux_voisins_meme_type = nb_voisins_meme_type / total_voisins if total_voisins > 0 else 0
+            if taux_voisins_meme_type >= tolerance:
+                nb_points_satisfaits += 1
+        taux_satisfaction_moyen = nb_points_satisfaits / len(self.points) * 100 if len(self.points) > 0 else 0
         return round(taux_satisfaction_moyen, 2)
 
 
+import tkinter.simpledialog as sd
+
+
 class Application(tk.Tk):
-    def __init__(self, taille, nb_points_bleus, nb_points_rouges):
+    def __init__(self):
         super().__init__()
         self.title("Schelling's Segregation Model")
+
+        taille = sd.askinteger("Input", "Entrez la taille de la grille :")
+        nb_points_bleus = sd.askinteger("Input", "Entrez le nombre de points bleus :")
+        nb_points_rouges = sd.askinteger("Input", "Entrez le nombre de points rouges :")
+
         self.canvas = tk.Canvas(self, width=40*taille, height=40*taille, bg="white")
         self.canvas.pack()
 
@@ -113,7 +115,6 @@ class Application(tk.Tk):
         self.label.pack()
 
         self.mise_a_jour_grille()
-
 
     def mise_a_jour_grille(self):
         self.grille.deplacer_points()
@@ -139,17 +140,12 @@ class Application(tk.Tk):
         if self.grille.grille_est_stable():
             msg.showinfo("Résultat", "Équilibre ségrégationniste atteint.")
         else:
-            self.after(1000, self.mise_a_jour_grille)  # Planifie la prochaine mise à jour après 30 ms
+            self.after(100, self.mise_a_jour_grille)  # Planifie la prochaine mise à jour après 30 ms
 
 
 def main():
-    taille = int(input("Entrez la taille de la grille : "))
-    nb_points_bleus = int(input("Entrez le nombre de points bleus : "))
-    nb_points_rouges = int(input("Entrez le nombre de points rouges : "))
-
-    app = Application(taille, nb_points_bleus, nb_points_rouges)
+    app = Application()
     app.mainloop()
-
 
 if __name__ == "__main__":
     main()
