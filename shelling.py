@@ -29,7 +29,7 @@ class Grille:
                    if not (nx == x and ny == y)]
         return voisins
     
-  # Le point serait insatisfait dans toutes les positions voisines
+  # Le point serait insatisfait dans toutes les positions vMoliputoisines
     def deplacer_points(self):
         deplacement_effectue = False
         tolerance = 0.3  # Par exemple, chaque point tolère jusqu'à 30% de voisins d'une autre couleur
@@ -142,7 +142,7 @@ class Application(tk.Tk):
         if self.grille.grille_est_stable():
             msg.showinfo("Résultat", "Équilibre ségrégationniste atteint.")
         else:
-            self.after(100, self.mise_a_jour_grille)  # Planifie la prochaine mise à jour après 30 ms
+            self.after(10, self.mise_a_jour_grille)  # Planifie la prochaine mise à jour après 30 ms
 
 
 def main():
