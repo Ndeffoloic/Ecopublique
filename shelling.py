@@ -11,7 +11,6 @@ class Point:
         self.x = x
         self.y = y
         self.type = type
-        self.comptemoves = 0
 
 
 class Grille:
@@ -21,7 +20,6 @@ class Grille:
         self.grille = np.empty((taille, taille), dtype=object)
         self.equilibre = False
         self.nb_points_satisfaits = 0
-        self.tolerance = 0.1
 
     def initialiser_grille(self):
         for point in self.points:
@@ -37,54 +35,23 @@ class Grille:
         voisins = self.calculer_voisins(point.x, point.y)
         nb_voisins_meme_type = sum(1 for nx, ny in voisins if self.grille[nx][ny] == point.type)
         nb_voisins_autre_type = sum(1 for nx, ny in voisins if self.grille[nx][ny] != point.type and self.grille[nx][ny] is not None)
-        total_voisins = nb_voisins_meme_type + nb_voisins_autre_type
-        return nb_voisins_meme_type > nb_voisins_autre_type and nb_voisins_autre_type >self.tolerance*total_voisins
-    
-    def condition_deplacement(self,point,nx, ny):
-        voisins = self.calculer_voisins(point.x, point.y)
-        nb_voisins_meme_type = sum(1 for nx, ny in voisins if self.grille[nx][ny] == point.type)
-        nb_voisins_autre_type = sum(1 for nx, ny in voisins if self.grille[nx][ny] != point.type and self.grille[nx][ny] is not None)
-
-        nouveaux_voisins = self.calculer_voisins(nx, ny)
-        nb_nouveaux_voisins_meme_type = sum(1 for vx, vy in nouveaux_voisins if self.grille[vx][vy] == point.type)
-        nb_nouveaux_voisins_autre_type = sum(1 for vx, vy in nouveaux_voisins if self.grille[vx][vy] != point.type and self.grille[nx][ny] is not None)      
-        total_nouveaux_voisins = nb_nouveaux_voisins_meme_type + nb_nouveaux_voisins_autre_type
-        condition_deplacement = (nb_nouveaux_voisins_meme_type > nb_voisins_meme_type or nb_nouveaux_voisins_autre_type < nb_voisins_autre_type) and nb_voisins_autre_type >self.tolerance*total_nouveaux_voisins
-        return condition_deplacement
+        return nb_voisins_meme_type > nb_voisins_autre_type
     
   # Le point serait insatisfait dans toutes les positions vMoliputoisines
     def deplacer_points(self):
         deplacement_effectue = False
-        tolerance = 0.3  # Par exemple, chaque point tolère jusqu'à 30% de voisins d'une autre couleur
-
-        # Définir les directions possibles de déplacement
-        directionsR = [(0, 1), (1, 0),(0, -1), (-1, 0)] #(0, -1), (-1, 0)
-        directionsB = [(1, -1), (-1, 1),(1, 1), (-1, -1) ] #(1, 1), (-1, -1) 
-
         for point in self.points:
             if self.satisfait(point):
                 continue  # Reste à sa position  # Passer au point suivant
-            # Choisir les directions en fonction de la couleur du point
-            directions = directionsB if point.type.startswith('B') else directionsR
-            for dx, dy in directions:
-                nx, ny = point.x + dx, point.y + dy
-                # Vérifier si la nouvelle position est dans la grille et est vide
-                if 0 <= nx < self.taille and 0 <= ny < self.taille and self.grille[nx][ny] is None:
-                    # Calculer le taux de voisins du même type dans la nouvelle position
-                    if  self.satisfait(point) is False and self.condition_deplacement(point,nx, ny):
-                        self.grille[nx][ny], self.grille[point.x][point.y] = point.type, None
-                        point.x, point.y = nx, ny
-                        deplacement_effectue = True
-                        break  # Arrêter de chercher une fois qu'un espace libre est trouvé
-                    elif  self.satisfait(point) is False and self.condition_deplacement(point,nx, ny) is False and point.comptemoves < 4:
-                        espaces_vides = [point for pt in self.points if self.grille[pt.x][pt.y] is None]
-                        if len(espaces_vides) > 0:
-                            pt = random.choice(espaces_vides)
-                            self.grille[pt.x][pt.y], self.grille[point.x][point.y] = point.type, None
-                            point.x, point.y = pt.x, pt.y
-                            deplacement_effectue = True
-                            point.comptemoves += 1
-                            break  # Arrêter de chercher une fois qu'un espace libre est trouvé
+
+            else :
+                espaces_vides = [point for pt in self.points if self.grille[pt.x][pt.y] is None]
+                if len(espaces_vides) > 0:
+                    pt = random.choice(espaces_vides)
+                    self.grille[pt.x][pt.y], self.grille[point.x][point.y] = point.type, None
+                    point.x, point.y = pt.x, pt.y
+                    deplacement_effectue = True
+                    break  # Arrêter de chercher une fois qu'un espace libre est trouvé
         if not deplacement_effectue:
             self.equilibre = True
 
@@ -94,8 +61,8 @@ class Grille:
         for point in self.points:
             if self.satisfait(point):
                 self.nb_points_satisfaits += 1
-        taux_satisfaction_moyen = self.nb_points_satisfaits*100 / len(self.points) if len(self.points) > 0 else 0
-        return round(taux_satisfaction_moyen)
+        taux_satisfaction_moyen = self.nb_points_satisfaits*100 / len(self.points) if len(self.points) > 0 else 49.00
+        return round(taux_satisfaction_moyen,2)
 
 
 
@@ -147,7 +114,7 @@ class Application(tk.Tk):
                         couleur = "red"
 
                 self.canvas.create_rectangle(j * self.taillePixel, i * self.taillePixel, (j + 1) * self.taillePixel, (i + 1) * self.taillePixel, fill=couleur)
-
+        
         taux_satisfaction = self.grille.calculer_taux_satisfaction()
         info_text = f"Taux de Satisfaction: {taux_satisfaction}%"
         self.label.config(text=info_text)
@@ -155,7 +122,7 @@ class Application(tk.Tk):
         if self.grille.equilibre:
             msg.showinfo("Résultat", "Équilibre ségrégationniste atteint.")
         else:
-            self.after(10, self.mise_a_jour_grille)  # Planifie la prochaine mise à jour après 30 ms
+            self.after(1000, self.mise_a_jour_grille)  # Planifie la prochaine mise à jour après 30 ms
 
 
 def main():
