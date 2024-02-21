@@ -60,12 +60,6 @@ class Grille:
     def grille_est_stable(self):
         return self.equilibre
     
-    def calculer_taux_segregation(self):
-        nb_points_bleus = sum(1 for point in self.points if point.type.startswith('B'))
-        nb_points_rouges = sum(1 for point in self.points if point.type.startswith('R'))
-        taux_segregation = abs(nb_points_bleus - nb_points_rouges) / abs(nb_points_bleus + nb_points_rouges) * 100
-        return round(taux_segregation, 2)
-
     def calculer_taux_satisfaction(self):
         tolerance = 0.3  # Par exemple, chaque point tolère jusqu'à 30% de voisins d'une autre couleur
         nb_points_satisfaits = 0
@@ -132,9 +126,8 @@ class Application(tk.Tk):
 
                 self.canvas.create_rectangle(j * 40, i * 40, (j + 1) * 40, (i + 1) * 40, fill=couleur)
 
-        taux_segregation = self.grille.calculer_taux_segregation()
         taux_satisfaction = self.grille.calculer_taux_satisfaction()
-        info_text = f"Taux de Ségrégation: {taux_segregation}%\nTaux de Satisfaction: {taux_satisfaction}%"
+        info_text = f"Taux de Satisfaction: {taux_satisfaction}%"
         self.label.config(text=info_text)
 
         if self.grille.grille_est_stable():
