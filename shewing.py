@@ -28,34 +28,43 @@ class Grille:
                    for ny in range(max(0, y - 1), min(y + 2, self.taille))
                    if not (nx == x and ny == y)]
         return voisins
+    
+  # Le point serait insatisfait dans toutes les positions voisines
     def deplacer_points(self):
         deplacement_effectue = False
         tolerance = 0.3  # Par exemple, chaque point tolère jusqu'à 30% de voisins d'une autre couleur
-        iteration = 0
+
+        # Définir les directions possibles de déplacement
+        directionsR = [(0, 1), (1, 0),(0, -1), (-1, 0)] #(0, -1), (-1, 0)
+        directionsB = [(1, -1), (-1, 1),(1, 1), (-1, -1) ] #(1, 1), (-1, -1) 
+
         for point in self.points:
             voisins = self.calculer_voisins(point.x, point.y)
             nb_voisins_meme_type = sum(1 for nx, ny in voisins if self.grille[nx][ny] == point.type)
             nb_voisins_autre_type = sum(1 for nx, ny in voisins if self.grille[nx][ny] != point.type and self.grille[nx][ny] is not None)
-            #nb_espaces_vides = sum(1 for nx, ny in voisins if self.grille[nx][ny] is None)
-            
-            if nb_voisins_meme_type > nb_voisins_autre_type:
-                continue  # Reste à sa position
+            nb_espaces_vides = sum(1 for nx, ny in voisins if self.grille[nx][ny] is None)
 
-            # Définir les directions possibles de déplacement
-            directionsR = [(0, 1), (1, 0)] #(0, -1), (-1, 0)
-            directionsB = [(1, -1), (-1, 1)] #(1, 1), (-1, -1) 
+            if nb_voisins_meme_type > nb_voisins_autre_type   :
+                continue  # Reste à sa position  # Passer au point suivant
+            # Choisir les directions en fonction de la couleur du point
             directions = directionsB if point.type.startswith('B') else directionsR
             for dx, dy in directions:
                 nx, ny = point.x + dx, point.y + dy
                 # Vérifier si la nouvelle position est dans la grille et est vide
                 if 0 <= nx < self.taille and 0 <= ny < self.taille and self.grille[nx][ny] is None:
-                    self.grille[nx][ny], self.grille[point.x][point.y] = point.type, None
-                    point.x, point.y = nx, ny
-                    deplacement_effectue = True
-                    break  # Arrêter de chercher une fois qu'un espace libre est trouvé
+                    # Calculer le taux de voisins du même type dans la nouvelle position
+                    nouveaux_voisins = self.calculer_voisins(nx, ny)
+                    nb_nouveaux_voisins_meme_type = sum(1 for vx, vy in nouveaux_voisins if self.grille[vx][vy] == point.type)
+                    nb_nouveaux_voisins_autre_type = sum(1 for vx, vy in nouveaux_voisins if self.grille[vx][vy] != point.type)          # Ne déplacer le point que si le déplacement le rendrait plus satisfait
+                    if nb_nouveaux_voisins_meme_type > nb_voisins_meme_type or nb_nouveaux_voisins_autre_type < nb_voisins_autre_type:
+                        self.grille[nx][ny], self.grille[point.x][point.y] = point.type, None
+                        point.x, point.y = nx, ny
+                        deplacement_effectue = True
+                        break  # Arrêter de chercher une fois qu'un espace libre est trouvé
 
         if not deplacement_effectue:
             self.equilibre = True
+
 
     def grille_est_stable(self):
         return self.equilibre
@@ -82,12 +91,12 @@ class Application(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Schelling's Segregation Model")
-
+        self.taillePixel = 10
         taille = sd.askinteger("Input", "Entrez la taille de la grille :")
         nb_points_bleus = sd.askinteger("Input", "Entrez le nombre de points bleus :")
         nb_points_rouges = sd.askinteger("Input", "Entrez le nombre de points rouges :")
 
-        self.canvas = tk.Canvas(self, width=40*taille, height=40*taille, bg="white")
+        self.canvas = tk.Canvas(self, width=self.taillePixel*taille, height=self.taillePixel*taille, bg="white")
         self.canvas.pack()
 
         indices = list(range(taille * taille))
@@ -124,7 +133,7 @@ class Application(tk.Tk):
                     else:
                         couleur = "red"
 
-                self.canvas.create_rectangle(j * 40, i * 40, (j + 1) * 40, (i + 1) * 40, fill=couleur)
+                self.canvas.create_rectangle(j * self.taillePixel, i * self.taillePixel, (j + 1) * self.taillePixel, (i + 1) * self.taillePixel, fill=couleur)
 
         taux_satisfaction = self.grille.calculer_taux_satisfaction()
         info_text = f"Taux de Satisfaction: {taux_satisfaction}%"
