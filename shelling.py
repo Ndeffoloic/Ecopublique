@@ -62,7 +62,7 @@ class Grille:
         directionsB = [(1, -1), (-1, 1),(1, 1), (-1, -1) ] #(1, 1), (-1, -1) 
 
         for point in self.points:
-            if self.satisfait(point) :
+            if self.satisfait(point) and point.comptemoves > 4:
                 continue  # Reste à sa position  # Passer au point suivant
             # Choisir les directions en fonction de la couleur du point
             directions = directionsB if point.type.startswith('B') else directionsR
@@ -76,7 +76,7 @@ class Grille:
                         point.x, point.y = nx, ny
                         deplacement_effectue = True
                         break  # Arrêter de chercher une fois qu'un espace libre est trouvé
-                    elif  self.satisfait(point) is False and self.condition_deplacement(point,nx, ny) is False and point.comptemoves < 10:
+                    elif  self.satisfait(point) is False and self.condition_deplacement(point,nx, ny) is False and point.comptemoves < 4:
                         espaces_vides = [point for pt in self.points if self.grille[pt.x][pt.y] is None]
                         if len(espaces_vides) > 0:
                             pt = random.choice(espaces_vides)
