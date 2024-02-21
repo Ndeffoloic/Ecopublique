@@ -58,14 +58,12 @@ class Grille:
         tolerance = 0.3  # Par exemple, chaque point tolère jusqu'à 30% de voisins d'une autre couleur
 
         # Définir les directions possibles de déplacement
-        directionsR = [(0, 1), (1, 0),(0, -1), (-1, 0)] #(0, -1), (-1, 0)
-        directionsB = [(1, -1), (-1, 1),(1, 1), (-1, -1) ] #(1, 1), (-1, -1) 
+        directions = [(0, 1), (1, 0),(0, -1), (-1, 0),(1, -1), (-1, 1),(1, 1), (-1, -1) ] #(0, -1), (-1, 0)
+
 
         for point in self.points:
-            if self.satisfait(point) and point.comptemoves > 4:
+            if self.satisfait(point):
                 continue  # Reste à sa position  # Passer au point suivant
-            # Choisir les directions en fonction de la couleur du point
-            directions = directionsB if point.type.startswith('B') else directionsR
             for dx, dy in directions:
                 nx, ny = point.x + dx, point.y + dy
                 # Vérifier si la nouvelle position est dans la grille et est vide
