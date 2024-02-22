@@ -11,6 +11,8 @@ class Point:
         self.x = x
         self.y = y
         self.type = type
+        self.comptemoves = 0
+
 
 
 class Grille:
@@ -31,38 +33,39 @@ class Grille:
                    if not (nx == x and ny == y)]
         return voisins
     
-    def satisfait(self,point):
+    def satisfait(self, point):
         voisins = self.calculer_voisins(point.x, point.y)
         nb_voisins_meme_type = sum(1 for nx, ny in voisins if self.grille[nx][ny] == point.type)
         nb_voisins_autre_type = sum(1 for nx, ny in voisins if self.grille[nx][ny] != point.type and self.grille[nx][ny] is not None)
-        return nb_voisins_meme_type > nb_voisins_autre_type
-    
+        nb_espace_vide = sum(1 for nx, ny in voisins if self.grille[nx][ny] is None)
+        # Ajoutez cette ligne pour vérifier si un point a des voisins
+
+        return (nb_voisins_meme_type > 3 or nb_espace_vide > nb_voisins_meme_type>=nb_voisins_autre_type)
+
   # Le point serait insatisfait dans toutes les positions vMoliputoisines
     def deplacer_points(self):
         deplacement_effectue = False
-        for point in self.points:
-            if self.satisfait(point):
-                continue  # Reste à sa position  # Passer au point suivant
 
-            else :
-                espaces_vides = [point for pt in self.points if self.grille[pt.x][pt.y] is None]
-                if len(espaces_vides) > 0:
-                    pt = random.choice(espaces_vides)
-                    self.grille[pt.x][pt.y], self.grille[point.x][point.y] = point.type, None
-                    point.x, point.y = pt.x, pt.y
+        for point in self.points:
+            if not self.satisfait(point):  # Si le point n'est pas satisfait
+                espaces_vides = [(i, j) for i in range(self.taille) for j in range(self.taille) if self.grille[i][j] is None]
+                if espaces_vides:  # S'il y a des espaces vides
+                    i, j = random.choice(espaces_vides)  # Choisir un espace vide aléatoire
+                    self.grille[i][j], self.grille[point.x][point.y] = point.type, None
+                    point.x, point.y = i, j
                     deplacement_effectue = True
-                    break  # Arrêter de chercher une fois qu'un espace libre est trouvé
         if not deplacement_effectue:
             self.equilibre = True
 
-    
+
     def calculer_taux_satisfaction(self):
-        # Par exemple, chaque point tolère jusqu'à 30% de voisins d'une autre couleur
+        self.nb_points_satisfaits = 0  # Ajoutez cette ligne
         for point in self.points:
             if self.satisfait(point):
                 self.nb_points_satisfaits += 1
         taux_satisfaction_moyen = self.nb_points_satisfaits*100 / len(self.points) if len(self.points) > 0 else 49.00
         return round(taux_satisfaction_moyen,2)
+
 
 
 
@@ -101,7 +104,7 @@ class Application(tk.Tk):
 
     def mise_a_jour_grille(self):
         self.grille.deplacer_points()
-        self.canvas.delete("all")  # Efface tous les éléments du canvas
+        self.canvas.delete("all")  # Efface tous les Ã©lÃ©ments du canvas
 
         for i in range(self.grille.taille):
             for j in range(self.grille.taille):
@@ -114,15 +117,15 @@ class Application(tk.Tk):
                         couleur = "red"
 
                 self.canvas.create_rectangle(j * self.taillePixel, i * self.taillePixel, (j + 1) * self.taillePixel, (i + 1) * self.taillePixel, fill=couleur)
-        
+
         taux_satisfaction = self.grille.calculer_taux_satisfaction()
         info_text = f"Taux de Satisfaction: {taux_satisfaction}%"
         self.label.config(text=info_text)
 
         if self.grille.equilibre:
-            msg.showinfo("Résultat", "Équilibre ségrégationniste atteint.")
+            msg.showinfo("RÃ©sultat", "équilibre ségrégationniste atteint.")
         else:
-            self.after(1000, self.mise_a_jour_grille)  # Planifie la prochaine mise à jour après 30 ms
+            self.after(10, self.mise_a_jour_grille)  # Planifie la prochaine mise Ã  jour aprÃ¨s 30 ms
 
 
 def main():
