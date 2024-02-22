@@ -37,35 +37,28 @@ class Grille:
     
     def satisfait(self, point):
         voisins = self.calculer_voisins(point.x, point.y)
-        nb_voisins_meme_type = sum(1 for nx, ny in voisins if self.grille[nx][ny] == point.type)
+        nb_voisins_total = len(voisins)
+        if nb_voisins_total == 0:
+            return False
         nb_voisins_autre_type = sum(1 for nx, ny in voisins if self.grille[nx][ny] != point.type and self.grille[nx][ny] is not None)
-        nb_espace_vide = sum(1 for nx, ny in voisins if self.grille[nx][ny] is None)
-
-        # Ajoutez cette ligne pour vérifier si un point a des voisins
-        est_satisfait = (nb_voisins_autre_type < 5)
-        
-        # Ajoutez cette ligne pour mettre à jour l'état précédent
-        point.etat_precedent.append(est_satisfait)
-        if len(point.etat_precedent) > 2:  # Gardez seulement les 2 derniers états
-            point.etat_precedent.pop(0)
-        
-        # Un point est satisfait s'il a été satisfait lors des 2 dernières itérations
-        return all(point.etat_precedent)
+        pourcentage_autre_type = nb_voisins_autre_type * 100 / nb_voisins_total
+        return pourcentage_autre_type <= self.seuil_tolérance
   # Le point serait insatisfait dans toutes les positions vMoliputoisines
     def deplacer_points(self):
-        deplacement_effectue = False
-
-        for point in self.points:
-            if not self.satisfait(point):  # Si le point n'est pas satisfait
-                espaces_vides = [(i, j) for i in range(self.taille) for j in range(self.taille) if self.grille[i][j] is None]
-                if espaces_vides:  # S'il y a des espaces vides
-                    i, j = random.choice(espaces_vides)  # Choisir un espace vide aléatoire
-                    self.grille[i][j], self.grille[point.x][point.y] = point.type, None
-                    point.x, point.y = i, j
-                    deplacement_effectue = True
-                    point.compte_moves += 1
-        if not deplacement_effectue:
-            self.equilibre = True
+            deplacement_effectue = False
+            for point in self.points:
+                if not self.satisfait(point):
+                    espaces_vides = [(i, j) for i in range(self.taille) for j in range(self.taille) if self.grille[i][j] is None]
+                    if espaces_vides:
+                        distances = [abs(i - point.x) + abs(j - point.y) for i, j in espaces_vides]
+                        min_distance_index = distances.index(min(distances))
+                        i, j = espaces_vides[min_distance_index]
+                        self.grille[i][j], self.grille[point.x][point.y] = point.type, None
+                        point.x, point.y = i, j
+                        deplacement_effectue = True
+                        point.compte_moves += 1
+            if not deplacement_effectue:
+                self.equilibre = True
 
 
     def calculer_taux_satisfaction(self):
