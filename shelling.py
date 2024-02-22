@@ -47,14 +47,11 @@ class Grille:
         # Ajoutez cette ligne pour mettre à jour l'état précédent
         point.etat_precedent.append(est_satisfait)
         
-        # Un point est satisfait s'il y a plus de True que de False dans les 5 derniers états
-        if len(point.etat_precedent) >= 5:
-            if point.etat_precedent.count(True) > point.etat_precedent.count(False):
-                point.etat_precedent = []  # Vide la liste si le point est satisfait
-                return True
-            else:
-                point.etat_precedent = []  # Vide la liste si le point n'est pas satisfait
-        return False
+        if point.etat_precedent.count(True) > 2:
+            point.etat_precedent = []  # Vide la liste si le point est satisfait
+            return True
+        else:
+            return False
     def deplacer_points(self):
             deplacement_effectue = False
             for point in self.points:
@@ -77,7 +74,7 @@ class Grille:
         for point in self.points:
             if self.satisfait(point):
                 self.nb_points_satisfaits += 1
-        taux_satisfaction_moyen = self.nb_points_satisfaits*100 / len(self.points) if len(self.points) > 0 else 0.00
+        taux_satisfaction_moyen = self.nb_points_satisfaits*100 / len(self.points) if len(self.points) > 0 else 49.00
         return round(taux_satisfaction_moyen,2)
 
 
