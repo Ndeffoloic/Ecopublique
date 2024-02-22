@@ -32,7 +32,7 @@ class Grille:
     def calculer_voisins(self, x, y):
         voisins = [(nx, ny) for nx in range(max(0, x - 1), min(x + 2, self.taille))
                    for ny in range(max(0, y - 1), min(y + 2, self.taille))
-                   if not (nx == x and ny == y)]
+                   if not (nx == x and ny == y) and self.grille[nx][ny] is not None]
         return voisins
     
     def satisfait(self, point):
@@ -42,8 +42,19 @@ class Grille:
             return False
         nb_voisins_autre_type = sum(1 for nx, ny in voisins if self.grille[nx][ny] != point.type and self.grille[nx][ny] is not None)
         pourcentage_autre_type = nb_voisins_autre_type * 100 / nb_voisins_total
-        return pourcentage_autre_type <= self.seuil_tolérance
-  # Le point serait insatisfait dans toutes les positions vMoliputoisines
+        est_satisfait = pourcentage_autre_type <= self.seuil_tolérance
+        
+        # Ajoutez cette ligne pour mettre à jour l'état précédent
+        point.etat_precedent.append(est_satisfait)
+        
+        # Un point est satisfait s'il y a plus de True que de False dans les 5 derniers états
+        if len(point.etat_precedent) >= 5:
+            if point.etat_precedent.count(True) > point.etat_precedent.count(False):
+                point.etat_precedent = []  # Vide la liste si le point est satisfait
+                return True
+            else:
+                point.etat_precedent = []  # Vide la liste si le point n'est pas satisfait
+        return False
     def deplacer_points(self):
             deplacement_effectue = False
             for point in self.points:
@@ -66,7 +77,7 @@ class Grille:
         for point in self.points:
             if self.satisfait(point):
                 self.nb_points_satisfaits += 1
-        taux_satisfaction_moyen = self.nb_points_satisfaits*100 / len(self.points) if len(self.points) > 0 else 49.00
+        taux_satisfaction_moyen = self.nb_points_satisfaits*100 / len(self.points) if len(self.points) > 0 else 0.00
         return round(taux_satisfaction_moyen,2)
 
 
