@@ -11,7 +11,8 @@ class Point:
         self.x = x
         self.y = y
         self.type = type
-        self.comptemoves = 0
+        self.compte_moves = 0
+        self.etat_precedent = []  # Ajoutez cette ligne
 
 
 
@@ -22,6 +23,7 @@ class Grille:
         self.grille = np.empty((taille, taille), dtype=object)
         self.equilibre = False
         self.nb_points_satisfaits = 0
+        self.seuil_tolérance = 30
 
     def initialiser_grille(self):
         for point in self.points:
@@ -38,10 +40,17 @@ class Grille:
         nb_voisins_meme_type = sum(1 for nx, ny in voisins if self.grille[nx][ny] == point.type)
         nb_voisins_autre_type = sum(1 for nx, ny in voisins if self.grille[nx][ny] != point.type and self.grille[nx][ny] is not None)
         nb_espace_vide = sum(1 for nx, ny in voisins if self.grille[nx][ny] is None)
+
         # Ajoutez cette ligne pour vérifier si un point a des voisins
-
-        return (nb_voisins_meme_type > 3 or nb_espace_vide > nb_voisins_meme_type>=nb_voisins_autre_type)
-
+        est_satisfait = (nb_voisins_autre_type < 5)
+        
+        # Ajoutez cette ligne pour mettre à jour l'état précédent
+        point.etat_precedent.append(est_satisfait)
+        if len(point.etat_precedent) > 2:  # Gardez seulement les 2 derniers états
+            point.etat_precedent.pop(0)
+        
+        # Un point est satisfait s'il a été satisfait lors des 2 dernières itérations
+        return all(point.etat_precedent)
   # Le point serait insatisfait dans toutes les positions vMoliputoisines
     def deplacer_points(self):
         deplacement_effectue = False
@@ -54,6 +63,7 @@ class Grille:
                     self.grille[i][j], self.grille[point.x][point.y] = point.type, None
                     point.x, point.y = i, j
                     deplacement_effectue = True
+                    point.compte_moves += 1
         if not deplacement_effectue:
             self.equilibre = True
 
