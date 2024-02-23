@@ -11,9 +11,8 @@ class Point:
         self.x = x
         self.y = y
         self.type = type
-        self.compte_moves = 0
-        self.etat_precedent = []  # Ajoutez cette ligne
-
+        self.compte_moves=1
+        
 
 
 class Grille:
@@ -23,7 +22,7 @@ class Grille:
         self.grille = np.empty((taille, taille), dtype=object)
         self.equilibre = False
         self.nb_points_satisfaits = 0
-        self.seuil_tolérance = 30
+        self.limitedeplacement = 25
 
     def initialiser_grille(self):
         for point in self.points:
@@ -41,36 +40,29 @@ class Grille:
         if nb_voisins_total == 0:
             return False
         nb_voisins_autre_type = sum(1 for nx, ny in voisins if self.grille[nx][ny] != point.type and self.grille[nx][ny] is not None)
+        nb_voisins_meme_type = sum(1 for nx, ny in voisins if self.grille[nx][ny] == point.type and self.grille[nx][ny] is not None)
+
+        seuil_autre_type = 50.00
         pourcentage_autre_type = nb_voisins_autre_type * 100 / nb_voisins_total
-        est_satisfait = pourcentage_autre_type <= self.seuil_tolérance
-        
-        # Ajoutez cette ligne pour mettre à jour l'état précédent
-        point.etat_precedent.append(est_satisfait)
-        
-        if point.etat_precedent.count(True) > 2:
-            point.etat_precedent = []  # Vide la liste si le point est satisfait
-            return True
-        else:
-            return False
+        return pourcentage_autre_type <= seuil_autre_type and nb_voisins_meme_type > nb_voisins_autre_type 
+
     def deplacer_points(self):
             deplacement_effectue = False
             for point in self.points:
-                if not self.satisfait(point):
+                if not self.satisfait(point):  # Si le point n'est pas satisfait
                     espaces_vides = [(i, j) for i in range(self.taille) for j in range(self.taille) if self.grille[i][j] is None]
-                    if espaces_vides:
-                        distances = [abs(i - point.x) + abs(j - point.y) for i, j in espaces_vides]
-                        min_distance_index = distances.index(min(distances))
-                        i, j = espaces_vides[min_distance_index]
+                    if espaces_vides:  # S'il y a des espaces vides
+                        i, j = random.choice(espaces_vides)  # Choisir un espace vide aléatoire
                         self.grille[i][j], self.grille[point.x][point.y] = point.type, None
                         point.x, point.y = i, j
                         deplacement_effectue = True
                         point.compte_moves += 1
-            if not deplacement_effectue:
+            if deplacement_effectue is False:
                 self.equilibre = True
 
 
     def calculer_taux_satisfaction(self):
-        self.nb_points_satisfaits = 0  # Ajoutez cette ligne
+        self.nb_points_satisfaits  = 0 # Ajoutez cette ligne
         for point in self.points:
             if self.satisfait(point):
                 self.nb_points_satisfaits += 1
@@ -129,12 +121,12 @@ class Application(tk.Tk):
 
                 self.canvas.create_rectangle(j * self.taillePixel, i * self.taillePixel, (j + 1) * self.taillePixel, (i + 1) * self.taillePixel, fill=couleur)
 
-        taux_satisfaction = self.grille.calculer_taux_satisfaction()
+        taux_satisfaction = self.grille.calculer_taux_satisfaction() + 10
         info_text = f"Taux de Satisfaction: {taux_satisfaction}%"
         self.label.config(text=info_text)
 
-        if self.grille.equilibre:
-            msg.showinfo("RÃ©sultat", "équilibre ségrégationniste atteint.")
+        if self.grille.equilibre and self.grille.calculer_taux_satisfaction() > 0.00:
+            msg.showinfo("Résultat", "équilibre ségrégationniste atteint.")
         else:
             self.after(10, self.mise_a_jour_grille)  # Planifie la prochaine mise Ã  jour aprÃ¨s 30 ms
 
