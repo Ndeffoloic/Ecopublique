@@ -1,0 +1,39 @@
+def greet(func):
+    def wrapper(*args):
+        print("Hello, I'm inside the wrapper function.")
+        func(*args)
+    return wrapper
+
+def say_hello():
+    print("Hello, I'm inside the say_hello function.")
+
+say_hello = greet(say_hello)
+say_hello()
+
+def authorize(func):
+    authorized = False  
+    def wrapper(*args, **kwargs):
+        if not authorized:
+            return "Unauthorized access"
+        return func(*args, **kwargs)
+    return wrapper
+
+@authorize
+def secret_data():
+    return "This is confidential data"
+
+print(secret_data())
+
+def validate(func):
+    def wrapper(a, b):
+        if not isinstance(a, int) or not isinstance(b, int):
+            return "Error: Both arguments must be integers"
+        return func(a, b)
+    return wrapper
+
+@validate
+def add(a, b):
+    return a + b
+
+print(add(1, 2))  
+print(add(1, '2'))  

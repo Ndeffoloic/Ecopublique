@@ -13,6 +13,7 @@ class Point:
         self.type = type
         self.compte_moves = 0
         self.etat = {} # stocke une coordonnée en clé et la satisfaction en valeur
+        self.positions_visitees = [(x, y)]  # Ajoute la position initiale à la liste des positions visitées
 
 
 class Grille:
@@ -49,26 +50,25 @@ class Grille:
 
     def deplacer_points(self):
         deplacement_effectue = False
-        
+
         for point in self.points:
-            point.etat[point.x,point.y] = self.satisfait(point)
-            if self.satisfait(point) is False and self.pseudo_satisfait(point) is False:  # Si le point n'est pas satisfait
-                espaces_vides = [(i, j) for i in range(self.taille) for j in range(self.taille) if self.grille[i][j] is None]
+            point.etat[(point.x, point.y)] = self.satisfait(point)
+            if not self.satisfait(point) and not self.pseudo_satisfait(point):  # Si le point n'est pas satisfait
+                # Obtenir tous les espaces vides qui ne sont pas dans point.etat
+                espaces_vides = [(i, j) for i in range(self.taille) for j in range(self.taille) 
+                                if self.grille[i][j] is None and (i, j) not in point.etat]
                 if espaces_vides:  # S'il y a des espaces vides
-                    # Calculer la distance entre le point et chaque espace vide
-                    distances = [abs(i - point.x) + abs(j - point.y) for i, j in espaces_vides]
-                    # Trouver l'index de l'espace vide avec la distance minimale
-                    min_distance_index = distances.index(min(distances))
-                    # Choisir l'espace vide avec la distance minimale
-                    i, j = espaces_vides[min_distance_index]
+                    # Calculer la distance entre le point et chaque espace vide et les trier
+                    espaces_vides = sorted(espaces_vides, key=lambda coord: abs(coord[0] - point.x) + abs(coord[1] - point.y))
+                    # Choisir l'espace vide le plus proche
+                    i, j = espaces_vides[0]
 
                     self.grille[i][j], self.grille[point.x][point.y] = point.type, None
                     point.x, point.y = i, j
                     deplacement_effectue = True
                     point.compte_moves += 1
-        if deplacement_effectue is False:
+        if not deplacement_effectue:
             self.equilibre = True
-
 
     
     def calculer_taux_satisfaction(self):
@@ -93,18 +93,42 @@ class Grille:
 
         return round(taux_segregation, 2)
 
-
 class Application(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Schelling's Segregation Model")
         self.taillePixel = 10
-        taille = sd.askinteger("Input", "Entrez la taille de la grille :")
-        nb_points_bleus = sd.askinteger("Input", "Entrez le nombre de points bleus :")
-        nb_points_rouges = sd.askinteger("Input", "Entrez le nombre de points rouges :")
 
-        self.canvas = tk.Canvas(self, width=self.taillePixel*taille, height=self.taillePixel*taille, bg="white")
+        self.label_taille = tk.Label(self, text="Entrez la taille de la grille :")
+        self.label_taille.pack()
+        self.entry_taille = tk.Entry(self)
+        self.entry_taille.pack()
+
+        self.label_bleus = tk.Label(self, text="Entrez le nombre de points bleus :")
+        self.label_bleus.pack()
+        self.entry_bleus = tk.Entry(self)
+        self.entry_bleus.pack()
+
+        self.label_rouges = tk.Label(self, text="Entrez le nombre de points rouges :")
+        self.label_rouges.pack()
+        self.entry_rouges = tk.Entry(self)
+        self.entry_rouges.pack()
+
+        self.button_start = tk.Button(self, text="Start", command=self.start)
+        self.button_start.pack()
+
+        self.canvas = tk.Canvas(self, bg="white")
         self.canvas.pack()
+
+        self.label = tk.Label(self, text="")
+        self.label.pack()
+
+    def start(self):
+        taille = int(self.entry_taille.get())
+        nb_points_bleus = int(self.entry_bleus.get())
+        nb_points_rouges = int(self.entry_rouges.get())
+
+        self.canvas.config(width=self.taillePixel*taille, height=self.taillePixel*taille)
 
         indices = list(range(taille * taille))
         random.shuffle(indices)
@@ -121,10 +145,9 @@ class Application(tk.Tk):
         self.grille = Grille(taille, points)
         self.grille.initialiser_grille()
 
-        self.label = tk.Label(self, text="")
-        self.label.pack()
-
         self.mise_a_jour_grille()
+
+
 
     def mise_a_jour_grille(self):
         self.grille.deplacer_points()
@@ -144,10 +167,10 @@ class Application(tk.Tk):
 
         taux_segregation = self.grille.calculer_taux_segregation()
         taux_satisfaction = self.grille.calculer_taux_satisfaction()
-        info_text = f"Taux de Ségrégation: {taux_segregation}%\nTaux de Satisfaction: {taux_satisfaction}%"
+        info_text = f"Taux de Ségrégation: {taux_segregation}%\t\tTaux de Satisfaction: {taux_satisfaction}%"
         self.label.config(text=info_text)
-
-        if self.grille.equilibre:
+        print(taux_segregation, taux_satisfaction)
+        if self.grille.equilibre and taux_segregation > 50:
             msg.showinfo("Résultat", "Équilibre ségrégationniste atteint.")
         else:
             self.after(100, self.mise_a_jour_grille)  # Planifie la prochaine mise à jour après 30 ms
