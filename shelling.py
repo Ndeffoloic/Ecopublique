@@ -13,7 +13,8 @@ class Point:
         self.type = type
         self.compte_moves = 0
         self.etat = [] # stocke une coordonnée en clé et la satisfaction en valeur
-        self.positions_visitees = [(x, y)]  # Ajoute la position initiale à la liste des positions visitées
+        self.directions_visitees = []
+        
 
 
 class Grille:
@@ -46,27 +47,25 @@ class Grille:
             return False
             
         
-  # Le point serait insatisfait dans toutes les positions vMoliputoisines
-
     def deplacer_points(self):
         deplacement_effectue = False
-        
+        directions = [(0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (-1, -1), (1, -1), (-1, 1)]
         for point in self.points:
             point.etat.append(self.satisfait(point))
             if not self.satisfait(point):  # Si le point n'est pas satisfait
                 espaces_vides = [(i, j) for i in range(self.taille) for j in range(self.taille) if self.grille[i][j] is None]
-                # Filtrer les espaces vides pour exclure les positions déjà visitées
-                espaces_vides_pos = [pos for pos in espaces_vides if pos not in point.positions_visitees]
-                if espaces_vides_pos:  # S'il y a des espaces vides
+                # Filtrer les espaces vides pour exclure les directions déjà prises
+                espaces_vides_dir = [pos for pos in espaces_vides if (pos[0] - point.x, pos[1] - point.y) not in point.directions_visitees]
+                if espaces_vides_dir:  # S'il y a des espaces vides
                     # Choisir une cellule vide au hasard
-                    i, j = random.choice(espaces_vides_pos)
+                    i, j = random.choice(espaces_vides_dir)
 
                     self.grille[i][j], self.grille[point.x][point.y] = point.type, None
                     point.x, point.y = i, j
-                    point.positions_visitees.append((i, j))  # Ajouter la nouvelle position à la liste des positions visitées
+                    point.directions_visitees.append((i - point.x, j - point.y))  # Ajouter la nouvelle direction à la liste des directions visitées
                     deplacement_effectue = True
                     point.compte_moves += 1
-        if deplacement_effectue is False:
+        if not deplacement_effectue:
             self.equilibre = True
 
     
