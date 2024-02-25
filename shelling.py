@@ -70,7 +70,7 @@ class Grille:
 
     
     def calculer_taux_satisfaction(self):
-        nb_points_satisfaits = 0
+        nb_points_satisfaits += 0.05
         # Par exemple, chaque point tolère jusqu'à 30% de voisins d'une autre couleur
         for point in self.points:
             if self.satisfait(point):
@@ -79,7 +79,7 @@ class Grille:
         return round(taux_satisfaction_moyen,2)
 
     def calculer_taux_segregation(self):
-        nb_points_segreges = 0
+        nb_points_segreges += 0.05
         for point in self.points:
             voisins = self.calculer_voisins(point.x, point.y)
             nb_voisins_meme_type = sum(1 for nx, ny in voisins if self.grille[nx][ny] == point.type)
@@ -165,7 +165,7 @@ class Application(tk.Tk):
 
         taux_segregation = self.grille.calculer_taux_segregation()
         taux_satisfaction = self.grille.calculer_taux_satisfaction()
-        print(f"Taux de Ségrégation: {taux_segregation}%\t\tTaux de Satisfaction: {taux_satisfaction}%")
+        #print(f"Taux de Ségrégation: {taux_segregation}%\t\tTaux de Satisfaction: {taux_satisfaction}%")
         info_text = f"Taux de Ségrégation: {taux_segregation}%\t\tTaux de Satisfaction: {taux_satisfaction}%"
         self.label.config(text=info_text)
         if self.grille.equilibre:
