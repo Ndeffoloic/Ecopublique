@@ -12,7 +12,7 @@ class Point:
         self.y = y
         self.type = type
         self.compte_moves = 0
-        self.etat = {} # stocke une coordonnée en clé et la satisfaction en valeur
+        self.etat = [] # stocke une coordonnée en clé et la satisfaction en valeur
         self.positions_visitees = [(x, y)]  # Ajoute la position initiale à la liste des positions visitées
 
 
@@ -40,7 +40,7 @@ class Grille:
         return nb_voisins_meme_type >= len(voisins)/2
     
     def pseudo_satisfait(self, point):
-        if list(point.etat.values()).count(True) > 2:
+        if point.etat.count(True) > 2:
             return True
         else: 
             return False
@@ -50,24 +50,23 @@ class Grille:
 
     def deplacer_points(self):
         deplacement_effectue = False
-
+        
         for point in self.points:
-            point.etat[(point.x, point.y)] = self.satisfait(point)
-            if not self.satisfait(point) and not self.pseudo_satisfait(point):  # Si le point n'est pas satisfait
-                # Obtenir tous les espaces vides qui ne sont pas dans point.etat
-                espaces_vides = [(i, j) for i in range(self.taille) for j in range(self.taille) 
-                                if self.grille[i][j] is None and (i, j) not in point.etat]
-                if espaces_vides:  # S'il y a des espaces vides
-                    # Calculer la distance entre le point et chaque espace vide et les trier
-                    espaces_vides = sorted(espaces_vides, key=lambda coord: abs(coord[0] - point.x) + abs(coord[1] - point.y))
-                    # Choisir l'espace vide le plus proche
-                    i, j = espaces_vides[0]
+            point.etat.append(self.satisfait(point))
+            if not self.satisfait(point):  # Si le point n'est pas satisfait
+                espaces_vides = [(i, j) for i in range(self.taille) for j in range(self.taille) if self.grille[i][j] is None]
+                # Filtrer les espaces vides pour exclure les positions déjà visitées
+                espaces_vides_pos = [pos for pos in espaces_vides if pos not in point.positions_visitees]
+                if espaces_vides_pos:  # S'il y a des espaces vides
+                    # Choisir une cellule vide au hasard
+                    i, j = random.choice(espaces_vides_pos)
 
                     self.grille[i][j], self.grille[point.x][point.y] = point.type, None
                     point.x, point.y = i, j
+                    point.positions_visitees.append((i, j))  # Ajouter la nouvelle position à la liste des positions visitées
                     deplacement_effectue = True
                     point.compte_moves += 1
-        if not deplacement_effectue:
+        if deplacement_effectue is False:
             self.equilibre = True
 
     
@@ -167,10 +166,10 @@ class Application(tk.Tk):
 
         taux_segregation = self.grille.calculer_taux_segregation()
         taux_satisfaction = self.grille.calculer_taux_satisfaction()
+        print(f"Taux de Ségrégation: {taux_segregation}%\t\tTaux de Satisfaction: {taux_satisfaction}%")
         info_text = f"Taux de Ségrégation: {taux_segregation}%\t\tTaux de Satisfaction: {taux_satisfaction}%"
         self.label.config(text=info_text)
-        print(taux_segregation, taux_satisfaction)
-        if self.grille.equilibre and taux_segregation > 50:
+        if self.grille.equilibre:
             msg.showinfo("Résultat", "Équilibre ségrégationniste atteint.")
         else:
             self.after(100, self.mise_a_jour_grille)  # Planifie la prochaine mise à jour après 30 ms
