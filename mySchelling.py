@@ -75,9 +75,6 @@ class Schelling:
             if self.is_unsatisfied(x, y):
                 self.move_to_empty(x, y)
                 n_changes += 1
-        print(f"Iteration, changed {n_changes}")
-        print(f"Segregation rate: {self.segregation_rate()}")
-        print(f"Satisfaction rate: {self.satisfaction_rate()}")
         if n_changes == 0:
             print("System stabilized")
             return False
