@@ -1,4 +1,4 @@
-import random
+
 import tkinter as tk
 import tkinter.messagebox as msg
 import tkinter.simpledialog as sd
@@ -75,12 +75,13 @@ class Grille:
             for j in range(self.taille):
                 if self.grille[i, j] != 0 and self.satisfait(i, j):
                     nb_points_satisfaits += 1
-        return nb_points_satisfaits / (self.points_bleus + self.points_rouges) if (self.points_bleus + self.points_rouges) > 0 else 0
-
+        taux_satisfaction = nb_points_satisfaits*100 / (self.points_bleus + self.points_rouges) if (self.points_bleus + self.points_rouges) > 0 else 0
+        return round(taux_satisfaction, 2) if taux_satisfaction < 100 else 100.00
+    
     def calculer_taux_segregation(self):
         nb_points_segreges = 0
         for i in range(self.taille):
-            for j in range (self.taille):   
+            for j in range (self.taille):
                 if self.grille[i][j] != 0 :
                     voisins = self.calculer_voisins(i,j)
                     nb_voisins_meme_type = sum(1 for nx, ny in voisins if self.grille[nx][ny] == self.grille[i][j])
@@ -145,16 +146,14 @@ class Application(tk.Tk):
 
     def mise_a_jour_grille(self):
         self.canvas.delete("all")  # Efface tous les éléments du canvas
-        self.label.config(text=f"Segregation rate: {self.schelling.calculer_taux_segregation()}\t\tSatisfaction rate: {self.schelling.calculer_taux_satisfaction()}")
+        self.label.config(text=f"Taux de segregation : {self.schelling.calculer_taux_segregation()}\t\t taux de satisfaction : {self.schelling.calculer_taux_satisfaction()}")
         self.after(100, self.mise_a_jour_grille)  # Planifie la prochaine mise à jour après 100 ms
 
         for i in range(self.schelling.taille):
             for j in range(self.schelling.taille):
                 color = "blue" if self.schelling.grille[i, j] == 1 else "red" if self.schelling.grille[i, j] == 2 else "white"
                 self.canvas.create_rectangle(j*self.taillePixel, i*self.taillePixel, j*self.taillePixel+self.taillePixel, i*self.taillePixel+self.taillePixel, fill=color)
-        if self.schelling.equilibre:
-            msg.showinfo("Résultat", "Équilibre ségrégationniste atteint.")
-        else : 
+        if not self.schelling.equilibre:
             self.schelling.deplacer_points()
             
 
