@@ -1,3 +1,4 @@
+
 def greet(func):
     def wrapper(*args):
         print("Hello, I'm inside the wrapper function.")
